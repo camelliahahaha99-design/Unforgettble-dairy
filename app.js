@@ -63,6 +63,15 @@ const elements = {
   mobileMenu: document.getElementById("mobileMenu"),
   mobileSettings: document.getElementById("mobileSettings"),
   mobileTitle: document.getElementById("mobileTitle"),
+  mobileSettingsSheet: document.getElementById("mobileSettingsSheet"),
+  mobileSettingsBackdrop: document.getElementById("mobileSettingsBackdrop"),
+  mobileSettingsClose: document.getElementById("mobileSettingsClose"),
+  mobileProviderSelect: document.getElementById("mobileProviderSelect"),
+  mobileApiKeyInput: document.getElementById("mobileApiKeyInput"),
+  mobileToggleApiVisibility: document.getElementById("mobileToggleApiVisibility"),
+  mobileEyeOpenIcon: document.getElementById("mobileEyeOpenIcon"),
+  mobileEyeOffIcon: document.getElementById("mobileEyeOffIcon"),
+  mobileSaveApiKey: document.getElementById("mobileSaveApiKey"),
   entryBody: document.getElementById("entryBody"),
   micButton: document.getElementById("micButton"),
   micLabel: document.getElementById("micLabel"),
@@ -331,9 +340,41 @@ function bindNavigation() {
     switchView(order[(order.indexOf(state.currentView) + 1) % order.length]);
   });
   elements.mobileSettings.addEventListener("click", () => {
-    elements.settingsPanel.classList.toggle("hidden");
+    openMobileSettingsSheet();
   });
   elements.jumpToSpark.addEventListener("click", () => switchView("spark"));
+}
+
+function syncSettingsFields() {
+  elements.providerSelect.value = state.aiSettings.provider;
+  elements.apiKeyInput.value = state.aiSettings.apiKey;
+  if (elements.mobileProviderSelect) elements.mobileProviderSelect.value = state.aiSettings.provider;
+  if (elements.mobileApiKeyInput) elements.mobileApiKeyInput.value = state.aiSettings.apiKey;
+}
+
+function setSecretFieldVisibility(input, openIcon, offIcon, visible) {
+  if (!input) return;
+  input.type = visible ? "text" : "password";
+  openIcon?.classList.toggle("hidden", !visible);
+  offIcon?.classList.toggle("hidden", visible);
+}
+
+function openMobileSettingsSheet() {
+  if (!elements.mobileSettingsSheet) return;
+  syncSettingsFields();
+  elements.mobileSettingsSheet.classList.remove("hidden");
+}
+
+function closeMobileSettingsSheet() {
+  elements.mobileSettingsSheet?.classList.add("hidden");
+}
+
+function saveApiSettings(provider, apiKey) {
+  state.aiSettings.provider = provider;
+  state.aiSettings.apiKey = apiKey.trim();
+  saveJSON(SETTINGS_KEY, state.aiSettings);
+  syncSettingsFields();
+  markSaved(state.aiSettings.apiKey ? "API Key 已保存在本地" : "未填写 API Key");
 }
 
 function isMobileViewport() {
@@ -353,29 +394,42 @@ function syncResponsiveUI() {
 }
 
 function bindSettings() {
-  elements.providerSelect.value = state.aiSettings.provider;
-  elements.apiKeyInput.value = state.aiSettings.apiKey;
+  syncSettingsFields();
   elements.toggleSettings.addEventListener("click", () => {
     elements.settingsPanel.classList.toggle("hidden");
   });
   elements.toggleApiVisibility.addEventListener("click", () => {
-    const visible = elements.apiKeyInput.type === "text";
-    elements.apiKeyInput.type = visible ? "password" : "text";
-    elements.eyeOpenIcon.classList.toggle("hidden", !visible);
-    elements.eyeOffIcon.classList.toggle("hidden", visible);
+    setSecretFieldVisibility(
+      elements.apiKeyInput,
+      elements.eyeOpenIcon,
+      elements.eyeOffIcon,
+      elements.apiKeyInput.type !== "text"
+    );
   });
   elements.saveApiKey.addEventListener("click", () => {
-    state.aiSettings.provider = elements.providerSelect.value;
-    state.aiSettings.apiKey = elements.apiKeyInput.value.trim();
-    saveJSON(SETTINGS_KEY, state.aiSettings);
-    markSaved(state.aiSettings.apiKey ? "API Key 已保存在本地" : "未填写 API Key");
+    saveApiSettings(elements.providerSelect.value, elements.apiKeyInput.value);
   });
+  elements.mobileToggleApiVisibility?.addEventListener("click", () => {
+    setSecretFieldVisibility(
+      elements.mobileApiKeyInput,
+      elements.mobileEyeOpenIcon,
+      elements.mobileEyeOffIcon,
+      elements.mobileApiKeyInput.type !== "text"
+    );
+  });
+  elements.mobileSaveApiKey?.addEventListener("click", () => {
+    saveApiSettings(elements.mobileProviderSelect.value, elements.mobileApiKeyInput.value);
+    closeMobileSettingsSheet();
+  });
+  elements.mobileSettingsBackdrop?.addEventListener("click", closeMobileSettingsSheet);
+  elements.mobileSettingsClose?.addEventListener("click", closeMobileSettingsSheet);
   elements.closeApiReminder.addEventListener("click", () => {
     elements.apiReminder.classList.add("hidden");
   });
   elements.apiReminder.addEventListener("click", (event) => {
     if (event.target === elements.closeApiReminder) return;
-    elements.settingsPanel.classList.remove("hidden");
+    if (isMobileViewport()) openMobileSettingsSheet();
+    else elements.settingsPanel.classList.remove("hidden");
     elements.apiReminder.classList.add("hidden");
   });
 }

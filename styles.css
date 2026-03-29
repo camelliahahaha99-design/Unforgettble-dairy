@@ -546,6 +546,61 @@ button {
   display: none;
 }
 
+.mobile-settings-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+}
+
+.mobile-settings-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 8, 12, 0.52);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.mobile-settings-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 16px 18px;
+  border-radius: 28px 28px 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 0;
+  background: linear-gradient(180deg, rgba(18, 31, 44, 0.96), rgba(10, 16, 24, 0.98));
+  box-shadow:
+    0 -18px 48px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.mobile-sheet-handle {
+  width: 46px;
+  height: 5px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.mobile-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobile-sheet-head h2 {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.mobile-sheet-actions {
+  margin-top: 16px;
+}
+
 .view-panel {
   display: none;
   flex-direction: column;
@@ -1231,6 +1286,28 @@ button {
     color: var(--muted);
   }
 
+  .mobile-settings {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 251, 244, 0.1);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+  }
+
+  .mobile-settings svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
   .view-panel {
     min-height: calc(100vh - 24px);
     max-height: calc(100vh - 24px);
@@ -1467,6 +1544,12 @@ button {
     padding: 8px 10px;
   }
 
+  .mobile-settings {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+  }
+
   .panel-head h1 {
     font-size: 30px;
   }
@@ -1520,5 +1603,14 @@ button {
   .api-reminder-close {
     top: 5px;
     right: 6px;
+  }
+
+  .mobile-settings-panel {
+    padding: 12px 14px 16px;
+    border-radius: 24px 24px 0 0;
+  }
+
+  .mobile-sheet-head h2 {
+    font-size: 28px;
   }
 }
