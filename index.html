@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>念念之间</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="background-stage">
+        <div class="gradient-fluid" aria-hidden="true">
+          <div class="gradient-blob blob-a"></div>
+          <div class="gradient-blob blob-b"></div>
+          <div class="gradient-blob blob-c"></div>
+        </div>
+        <img class="media-layer media-image hidden" alt="" />
+        <video class="media-layer media-video hidden" muted loop playsinline></video>
+        <canvas class="rain-canvas" aria-hidden="true"></canvas>
+        <div class="glass-vignette" aria-hidden="true"></div>
+      </div>
+
+      <main class="app-layout">
+        <aside class="side-rail">
+          <div class="brand-block">
+            <p class="eyebrow">Private Thought System</p>
+            <input
+              id="journalName"
+              class="journal-name"
+              type="text"
+              maxlength="48"
+              placeholder="给这本日记起个名字"
+              value="念念之间"
+            />
+          </div>
+
+          <div class="status-inline">
+            <span class="live-dot"></span>
+            <span id="entryMetaTime">此刻</span>
+            <span id="entryMetaDate">03.29.26</span>
+          </div>
+
+          <nav class="primary-nav" aria-label="主导航">
+            <button class="nav-pill is-active" data-view="spark" type="button">
+              <span>灵光</span>
+              <small>实时记录</small>
+            </button>
+            <button class="nav-pill" data-view="gather" type="button">
+              <span>拾掇</span>
+              <small>每日 / 每周 / 每月总结</small>
+            </button>
+            <button class="nav-pill" data-view="echo" type="button">
+              <span>回响</span>
+              <small>回溯与链接</small>
+            </button>
+          </nav>
+
+          <section class="rail-card mini-stats">
+            <div class="stat-grid">
+              <article>
+                <strong id="statStreak">0</strong>
+                <span>连续记录天数</span>
+              </article>
+              <article>
+                <strong id="statEntries">0</strong>
+                <span>总记录条数</span>
+              </article>
+              <article>
+                <strong id="statWeek">0</strong>
+                <span>本周想法数</span>
+              </article>
+              <article>
+                <strong id="statWords">0</strong>
+                <span>累计字数</span>
+              </article>
+            </div>
+          </section>
+
+          <section class="rail-card config-card">
+            <div class="config-head">
+              <div>
+                <p class="eyebrow">LLM 文本处理</p>
+                <h2>本地保存 API Key</h2>
+              </div>
+              <button class="ghost-button" id="toggleSettings" type="button">展开</button>
+            </div>
+            <div class="settings-panel hidden" id="settingsPanel">
+              <label class="field">
+                <span>服务商</span>
+                <select id="providerSelect">
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="openai">OpenAI</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>API Key</span>
+                <div class="secret-field">
+                  <input id="apiKeyInput" type="password" placeholder="仅保存在当前浏览器" />
+                  <button class="ghost-button secret-toggle" id="toggleApiVisibility" type="button">显示</button>
+                </div>
+              </label>
+              <div class="settings-actions">
+                <button class="ghost-button" id="saveApiKey" type="button">保存 Key</button>
+                <button class="ghost-button" id="clearApiKey" type="button">清除</button>
+              </div>
+              <p class="hint">
+                所有日记数据仅存于浏览器本地 IndexedDB，无服务器、无追踪。只有你主动点击 AI 整理或生成总结时，文本才会发送到你选择的模型服务。
+              </p>
+            </div>
+          </section>
+        </aside>
+
+        <section class="content-stage">
+          <header class="mobile-topbar">
+            <button class="mobile-menu" id="mobileMenu" type="button">导航</button>
+            <span id="mobileTitle">灵光</span>
+            <button class="mobile-settings" id="mobileSettings" type="button">AI</button>
+          </header>
+
+          <section class="view-panel is-active" id="view-spark" data-view-panel="spark">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Capture</p>
+                <h1>灵光</h1>
+              </div>
+              <div class="panel-actions">
+                <div class="save-indicator" id="saveIndicator">准备开始记录</div>
+                <button class="tool-button" id="micButton" type="button" aria-label="开始语音输入">
+                  <span class="tool-icon">◉</span>
+                  <span id="micLabel">语音输入</span>
+                </button>
+                <button class="tool-button" id="polishEntry" type="button">
+                  <span class="tool-icon">✦</span>
+                  <span>AI 整理</span>
+                </button>
+                <button class="tool-button" id="saveEntry" type="button">
+                  <span class="tool-icon">⌁</span>
+                  <span>记下一条</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="composer-shell">
+              <div class="composer-scroll">
+                <label class="document-label" for="entryBody">此刻在想什么</label>
+                <div
+                  id="entryBody"
+                  class="document-body rich-editor"
+                  contenteditable="true"
+                  data-placeholder="一句碎片、一件幸事、一个担忧、一瞬念头，都先落在这里。"
+                ></div>
+              </div>
+              <div class="format-toolbar">
+                <button class="format-button" id="toggleBold" type="button" aria-label="切换加粗">B</button>
+                <button class="format-button" id="toggleUnderline" type="button" aria-label="切换下划线">U</button>
+                <button class="format-button" id="toggleOrderedList" type="button" aria-label="自动编号">1.</button>
+                <button class="format-button" id="toggleBulletList" type="button" aria-label="小圆点标记">•</button>
+                <label class="format-control">
+                  <span>字</span>
+                  <input id="fontSizeControl" type="range" min="0" max="4" step="1" value="2" />
+                </label>
+                <label class="format-control">
+                  <span>距</span>
+                  <input id="lineHeightControl" type="range" min="0" max="2" step="1" value="1" />
+                </label>
+                <button class="ghost-button" id="uploadTrigger" type="button">更换背景</button>
+                <button class="ghost-button" id="resetBackground" type="button">初始背景</button>
+                <button class="ghost-button" id="insertImage" type="button">插入图片</button>
+                <button class="ghost-button" id="imageShrink" type="button">图-</button>
+                <button class="ghost-button" id="imageGrow" type="button">图+</button>
+              </div>
+            </div>
+
+            <div class="spark-stream">
+              <div class="stream-head">
+                <p class="eyebrow">Today Stream</p>
+                <div class="stream-meta" id="streamMeta">今天的碎片记录会一条一条留在这里。</div>
+              </div>
+              <div class="note-stream" id="noteStream">
+                <p class="empty-copy">还没有记录。说一句、写一句，就会生成一张新的记录卡片。</p>
+              </div>
+            </div>
+
+            <div class="spark-footer">
+              <section class="rail-card">
+                <p class="eyebrow">整理后内容</p>
+                <div class="ai-output" id="polishedPreview">还没有整理结果。输入一点内容，再试试 AI 整理。</div>
+              </section>
+              <section class="rail-card">
+                <p class="eyebrow">跨时间连接</p>
+                <div class="connections-list" id="connectionsList">
+                  <p class="empty-copy">保存后，这里会提示与你之前记录相互呼应的片段。</p>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section class="view-panel" id="view-gather" data-view-panel="gather">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Summaries</p>
+                <h1>拾掇</h1>
+              </div>
+            </div>
+
+            <div class="summary-grid">
+              <article class="summary-card">
+                <div class="summary-head">
+                  <div>
+                    <p class="eyebrow">Daily</p>
+                    <h2>每日总结</h2>
+                  </div>
+                  <div class="summary-actions">
+                    <button class="tool-button" id="generateDaily" type="button">AI 生成</button>
+                    <button class="tool-button summary-mic" data-target="dailyManual" type="button">语音输入</button>
+                    <button class="tool-button save-manual" data-kind="daily" type="button">保存手写</button>
+                  </div>
+                </div>
+                <div class="summary-meta" id="dailySummaryMeta">每天早上 9:00 建议生成昨天 00:00-24:00 的整理稿。</div>
+                <div class="summary-body rich-editor" id="dailySummaryBody" contenteditable="true">还没有每日总结。</div>
+                <div
+                  class="summary-manual rich-editor"
+                  id="dailyManual"
+                  contenteditable="true"
+                  data-placeholder="也可以自己手写或语音补充每日总结。"
+                ></div>
+                <div class="summary-history" id="dailyHistory"></div>
+              </article>
+
+              <article class="summary-card">
+                <div class="summary-head">
+                  <div>
+                    <p class="eyebrow">Weekly</p>
+                    <h2>每周总结</h2>
+                  </div>
+                  <div class="summary-actions">
+                    <button class="tool-button" id="generateWeekly" type="button">AI 生成</button>
+                    <button class="tool-button summary-mic" data-target="weeklyManual" type="button">语音输入</button>
+                    <button class="tool-button save-manual" data-kind="weekly" type="button">保存手写</button>
+                  </div>
+                </div>
+                <div class="summary-meta" id="weeklySummaryMeta">每周日早上 10:00 建议整理上周日到周六的所有想法。</div>
+                <div class="summary-body rich-editor" id="weeklySummaryBody" contenteditable="true">还没有每周总结。</div>
+                <div
+                  class="summary-manual rich-editor"
+                  id="weeklyManual"
+                  contenteditable="true"
+                  data-placeholder="也可以自己手写或语音补充每周总结。"
+                ></div>
+                <div class="summary-history" id="weeklyHistory"></div>
+              </article>
+
+              <article class="summary-card summary-card-wide">
+                <div class="summary-head">
+                  <div>
+                    <p class="eyebrow">Monthly</p>
+                    <h2>每月总结</h2>
+                  </div>
+                  <div class="summary-actions">
+                    <button class="tool-button" id="generateMonthly" type="button">AI 生成</button>
+                    <button class="tool-button summary-mic" data-target="monthlyManual" type="button">语音输入</button>
+                    <button class="tool-button save-manual" data-kind="monthly" type="button">保存手写</button>
+                  </div>
+                </div>
+                <div class="summary-meta" id="monthlySummaryMeta">每月回头看时，把反复出现的主题与变化梳理出来。</div>
+                <div class="summary-body rich-editor" id="monthlySummaryBody" contenteditable="true">还没有每月总结。</div>
+                <div
+                  class="summary-manual rich-editor"
+                  id="monthlyManual"
+                  contenteditable="true"
+                  data-placeholder="也可以自己手写或语音补充每月总结。"
+                ></div>
+                <div class="summary-history" id="monthlyHistory"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="view-panel" id="view-echo" data-view-panel="echo">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Archive</p>
+                <h1>回响</h1>
+              </div>
+            </div>
+
+            <div class="echo-grid">
+              <section class="archive-card">
+                <label class="field archive-search">
+                  <span>关键字搜索</span>
+                  <input id="archiveSearch" type="text" placeholder="搜索一句旧话、一个主题、一个人名" />
+                </label>
+                <div class="calendar-header">
+                  <div class="calendar-nav-group">
+                    <button class="calendar-nav" id="prevMonth" type="button" aria-label="上个月">←</button>
+                    <div>
+                      <p class="eyebrow">Calendar</p>
+                      <h2 id="calendarLabel"></h2>
+                    </div>
+                    <button class="calendar-nav" id="nextMonth" type="button" aria-label="下个月">→</button>
+                  </div>
+                </div>
+                <div class="calendar-weekdays">
+                  <span>日</span>
+                  <span>一</span>
+                  <span>二</span>
+                  <span>三</span>
+                  <span>四</span>
+                  <span>五</span>
+                  <span>六</span>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+              </section>
+
+              <section class="archive-card archive-preview">
+                <div class="preview-top">
+                  <div>
+                    <p class="eyebrow">Selected Day</p>
+                    <h2 id="archiveDateLabel">今天</h2>
+                  </div>
+                  <button class="tool-button" id="jumpToSpark" type="button">回到编辑</button>
+                </div>
+                <article class="archive-body" id="archiveBody">选择日期后，这里会显示当天记录。</article>
+                <div class="related-block">
+                  <p class="eyebrow">相互呼应</p>
+                  <div class="connections-list" id="archiveConnections">
+                    <p class="empty-copy">若发现相似或延展的旧记录，会出现在这里。</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+        </section>
+      </main>
+
+      <section class="control-panel hidden" id="controlPanel" aria-label="沉浸控制台">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Atmosphere</p>
+            <h2>沉浸控制台</h2>
+          </div>
+          <button class="panel-close" id="panelClose" type="button" aria-label="关闭控制台">×</button>
+        </div>
+        <label class="control-row">
+          <span>流动强度</span>
+          <input id="rainAmount" type="range" min="0" max="1" step="0.01" value="0.45" />
+        </label>
+        <label class="control-row">
+          <span>雾气</span>
+          <input id="mistAmount" type="range" min="0" max="1" step="0.01" value="0.34" />
+        </label>
+        <label class="control-row">
+          <span>折射</span>
+          <input id="refraction" type="range" min="0" max="1.5" step="0.01" value="0.62" />
+        </label>
+        <label class="control-row">
+          <span>流动速度</span>
+          <input id="trailSpeed" type="range" min="0.2" max="2.2" step="0.01" value="0.85" />
+        </label>
+        <label class="control-row">
+          <span>景深模糊</span>
+          <input id="blurDepth" type="range" min="0" max="1" step="0.01" value="0.46" />
+        </label>
+        <label class="control-row">
+          <span>背景模糊</span>
+          <input id="backgroundBlur" type="range" min="0" max="1" step="0.01" value="0.28" />
+        </label>
+        <div class="panel-actions">
+          <button class="ghost-button" id="resetScene" type="button">恢复默认</button>
+          <button class="ghost-button" id="clearMedia" type="button">移除媒体</button>
+        </div>
+      </section>
+
+      <div class="floating-actions">
+        <button class="floating-button" id="consoleFab" type="button" aria-label="打开沉浸控制台">
+          <span>氛围</span>
+        </button>
+      </div>
+
+      <input id="mediaInput" type="file" accept="image/*,video/*" hidden />
+      <input id="inlineImageInput" type="file" accept="image/*" hidden />
+
+      <section class="api-reminder" id="apiReminder">
+        <button class="api-reminder-close" id="closeApiReminder" type="button" aria-label="关闭提醒">×</button>
+        <p>前往设置配置 API Key，解锁 AI 功能</p>
+      </section>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
