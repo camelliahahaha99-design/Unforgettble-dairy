@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
@@ -27,7 +27,16 @@
       </div>
 
       <main class="app-layout">
-        <aside class="side-rail">
+        <aside class="side-rail" id="leftPanel">
+          <div class="panel-move-handle" id="leftPanelMoveHandle" aria-hidden="true"></div>
+          <div class="panel-resize-handle panel-resize-top" id="leftPanelResizeTop" aria-hidden="true"></div>
+          <div class="panel-resize-handle panel-resize-bottom" id="leftPanelResizeBottom" aria-hidden="true"></div>
+          <div class="panel-resize-handle panel-resize-left" id="leftPanelResizeLeft" aria-hidden="true"></div>
+          <div class="panel-resize-handle panel-resize-right" id="leftPanelResizeHandle" aria-hidden="true"></div>
+          <div class="panel-resize-corner panel-corner-tl" id="leftPanelCornerTL" aria-hidden="true"></div>
+          <div class="panel-resize-corner panel-corner-tr" id="leftPanelCornerTR" aria-hidden="true"></div>
+          <div class="panel-resize-corner panel-corner-bl" id="leftPanelCornerBL" aria-hidden="true"></div>
+          <div class="panel-resize-corner panel-corner-br" id="leftPanelCornerBR" aria-hidden="true"></div>
           <div class="brand-block">
             <p class="eyebrow">Private Thought System</p>
             <input
@@ -102,12 +111,49 @@
                 <span>API Key</span>
                 <div class="secret-field">
                   <input id="apiKeyInput" type="password" placeholder="仅保存在当前浏览器" />
-                  <button class="ghost-button secret-toggle" id="toggleApiVisibility" type="button">显示</button>
+                  <button class="secret-toggle" id="toggleApiVisibility" type="button" aria-label="显示或隐藏 API Key">
+                    <svg id="eyeOpenIcon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12Z"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                      />
+                      <circle cx="12" cy="12" r="3.25" fill="none" stroke="currentColor" stroke-width="1.8" />
+                    </svg>
+                    <svg id="eyeOffIcon" class="hidden" viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M3 3l18 18"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                      />
+                      <path
+                        d="M10.58 5.37A10.82 10.82 0 0 1 12 5.25c6 0 9.75 6.75 9.75 6.75a17.56 17.56 0 0 1-3.19 4.13M6.4 6.39C4.03 8.03 2.25 12 2.25 12s3.75 6.75 9.75 6.75a10.9 10.9 0 0 0 3.13-.45"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                      />
+                      <path
+                        d="M9.88 9.88A3 3 0 0 0 14.12 14.12"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </label>
               <div class="settings-actions">
                 <button class="ghost-button" id="saveApiKey" type="button">保存 Key</button>
-                <button class="ghost-button" id="clearApiKey" type="button">清除</button>
               </div>
               <p class="hint">
                 所有日记数据仅存于浏览器本地 IndexedDB，无服务器、无追踪。只有你主动点击 AI 整理或生成总结时，文本才会发送到你选择的模型服务。
@@ -116,7 +162,16 @@
           </section>
         </aside>
 
-        <section class="content-stage">
+        <section class="content-stage" id="rightPanel">
+          <div class="panel-move-handle panel-move-handle-right" id="rightPanelMoveHandle" aria-hidden="true"></div>
+          <div class="panel-resize-handle panel-resize-top" id="rightPanelResizeTop" aria-hidden="true"></div>
+          <div class="panel-resize-handle panel-resize-bottom" id="rightPanelResizeBottom" aria-hidden="true"></div>
+          <div class="panel-resize-handle panel-resize-left" id="rightPanelResizeHandle" aria-hidden="true"></div>
+          <div class="panel-resize-handle panel-resize-right" id="rightPanelResizeRight" aria-hidden="true"></div>
+          <div class="panel-resize-corner panel-corner-tl" id="rightPanelCornerTL" aria-hidden="true"></div>
+          <div class="panel-resize-corner panel-corner-tr" id="rightPanelCornerTR" aria-hidden="true"></div>
+          <div class="panel-resize-corner panel-corner-bl" id="rightPanelCornerBL" aria-hidden="true"></div>
+          <div class="panel-resize-corner panel-corner-br" id="rightPanelCornerBR" aria-hidden="true"></div>
           <header class="mobile-topbar">
             <button class="mobile-menu" id="mobileMenu" type="button">导航</button>
             <span id="mobileTitle">灵光</span>
@@ -143,6 +198,9 @@
                   <span class="tool-icon">⌁</span>
                   <span>记下一条</span>
                 </button>
+                <button class="ghost-button mobile-only" id="mobileFormatToggle" type="button" aria-expanded="false">
+                  格式
+                </button>
               </div>
             </div>
 
@@ -156,7 +214,7 @@
                   data-placeholder="一句碎片、一件幸事、一个担忧、一瞬念头，都先落在这里。"
                 ></div>
               </div>
-              <div class="format-toolbar">
+              <div class="format-toolbar" id="formatToolbar">
                 <button class="format-button" id="toggleBold" type="button" aria-label="切换加粗">B</button>
                 <button class="format-button" id="toggleUnderline" type="button" aria-label="切换下划线">U</button>
                 <button class="format-button" id="toggleOrderedList" type="button" aria-label="自动编号">1.</button>
@@ -171,9 +229,7 @@
                 </label>
                 <button class="ghost-button" id="uploadTrigger" type="button">更换背景</button>
                 <button class="ghost-button" id="resetBackground" type="button">初始背景</button>
-                <button class="ghost-button" id="insertImage" type="button">插入图片</button>
-                <button class="ghost-button" id="imageShrink" type="button">图-</button>
-                <button class="ghost-button" id="imageGrow" type="button">图+</button>
+                <button class="ghost-button" id="insertImage" type="button">图片</button>
               </div>
             </div>
 
@@ -360,15 +416,23 @@
         </label>
         <label class="control-row">
           <span>流动速度</span>
-          <input id="trailSpeed" type="range" min="0.2" max="2.2" step="0.01" value="0.85" />
+          <input id="trailSpeed" type="range" min="0.2" max="2.2" step="0.01" value="0.9" />
         </label>
         <label class="control-row">
           <span>景深模糊</span>
-          <input id="blurDepth" type="range" min="0" max="1" step="0.01" value="0.46" />
+          <input id="blurDepth" type="range" min="0" max="1" step="0.01" value="0.42" />
         </label>
         <label class="control-row">
           <span>背景模糊</span>
-          <input id="backgroundBlur" type="range" min="0" max="1" step="0.01" value="0.28" />
+          <input id="backgroundBlur" type="range" min="0" max="1" step="0.01" value="0.1" />
+        </label>
+        <label class="control-row">
+          <span>左栏透明度</span>
+          <input id="leftPanelOpacity" type="range" min="0" max="0.92" step="0.01" value="0.24" />
+        </label>
+        <label class="control-row">
+          <span>右栏透明度</span>
+          <input id="rightPanelOpacity" type="range" min="0" max="0.92" step="0.01" value="0.2" />
         </label>
         <div class="panel-actions">
           <button class="ghost-button" id="resetScene" type="button">恢复默认</button>
@@ -376,9 +440,23 @@
         </div>
       </section>
 
+      <div class="panel-dock panel-dock-left" id="leftPanelDock" aria-hidden="true"></div>
+      <div class="panel-dock panel-dock-right" id="rightPanelDock" aria-hidden="true"></div>
+
       <div class="floating-actions">
+        <button class="floating-button floating-button-secondary" id="togglePanelsFab" type="button" aria-label="隐藏或显示面板">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12Z" />
+            <circle cx="12" cy="12" r="3.25" />
+          </svg>
+        </button>
         <button class="floating-button" id="consoleFab" type="button" aria-label="打开沉浸控制台">
-          <span>氛围</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 7h14" />
+            <path d="M5 17h14" />
+            <circle cx="10" cy="7" r="2.4" />
+            <circle cx="14" cy="17" r="2.4" />
+          </svg>
         </button>
       </div>
 
@@ -387,7 +465,7 @@
 
       <section class="api-reminder" id="apiReminder">
         <button class="api-reminder-close" id="closeApiReminder" type="button" aria-label="关闭提醒">×</button>
-        <p>前往设置配置 API Key，解锁 AI 功能</p>
+        <p>前往左侧面板配置 API Key，解锁 AI 功能。</p>
       </section>
     </div>
 

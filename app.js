@@ -5,6 +5,7 @@ const SETTINGS_KEY = "thought-prototype-ai-settings-v1";
 const SUMMARIES_KEY = "thought-prototype-summaries-v2";
 const DB_NAME = "nian-nian-zhi-jian-db";
 const STORE_NAME = "kv";
+const DEFAULT_BACKGROUND_VIDEO = "./background-2026-03-30.mp4";
 const FONT_SIZE_OPTIONS = [12, 16, 20, 24, 28];
 const LINE_HEIGHT_OPTIONS = [1.0, 1.5, 2.0];
 // The raindrop logic below is an original browser adaptation inspired by
@@ -12,6 +13,28 @@ const LINE_HEIGHT_OPTIONS = [1.0, 1.5, 2.0];
 
 const elements = {
   canvas: document.querySelector(".rain-canvas"),
+  leftPanel: document.getElementById("leftPanel"),
+  rightPanel: document.getElementById("rightPanel"),
+  leftPanelMoveHandle: document.getElementById("leftPanelMoveHandle"),
+  rightPanelMoveHandle: document.getElementById("rightPanelMoveHandle"),
+  leftPanelResizeLeft: document.getElementById("leftPanelResizeLeft"),
+  leftPanelResizeHandle: document.getElementById("leftPanelResizeHandle"),
+  rightPanelResizeHandle: document.getElementById("rightPanelResizeHandle"),
+  rightPanelResizeRight: document.getElementById("rightPanelResizeRight"),
+  leftPanelResizeTop: document.getElementById("leftPanelResizeTop"),
+  leftPanelResizeBottom: document.getElementById("leftPanelResizeBottom"),
+  rightPanelResizeTop: document.getElementById("rightPanelResizeTop"),
+  rightPanelResizeBottom: document.getElementById("rightPanelResizeBottom"),
+  leftPanelCornerTL: document.getElementById("leftPanelCornerTL"),
+  leftPanelCornerTR: document.getElementById("leftPanelCornerTR"),
+  leftPanelCornerBL: document.getElementById("leftPanelCornerBL"),
+  leftPanelCornerBR: document.getElementById("leftPanelCornerBR"),
+  rightPanelCornerTL: document.getElementById("rightPanelCornerTL"),
+  rightPanelCornerTR: document.getElementById("rightPanelCornerTR"),
+  rightPanelCornerBL: document.getElementById("rightPanelCornerBL"),
+  rightPanelCornerBR: document.getElementById("rightPanelCornerBR"),
+  leftPanelDock: document.getElementById("leftPanelDock"),
+  rightPanelDock: document.getElementById("rightPanelDock"),
   image: document.querySelector(".media-image"),
   video: document.querySelector(".media-video"),
   mediaInput: document.getElementById("mediaInput"),
@@ -19,8 +42,6 @@ const elements = {
   uploadTrigger: document.getElementById("uploadTrigger"),
   resetBackground: document.getElementById("resetBackground"),
   insertImage: document.getElementById("insertImage"),
-  imageShrink: document.getElementById("imageShrink"),
-  imageGrow: document.getElementById("imageGrow"),
   journalName: document.getElementById("journalName"),
   entryMetaTime: document.getElementById("entryMetaTime"),
   entryMetaDate: document.getElementById("entryMetaDate"),
@@ -34,8 +55,9 @@ const elements = {
   providerSelect: document.getElementById("providerSelect"),
   apiKeyInput: document.getElementById("apiKeyInput"),
   toggleApiVisibility: document.getElementById("toggleApiVisibility"),
+  eyeOpenIcon: document.getElementById("eyeOpenIcon"),
+  eyeOffIcon: document.getElementById("eyeOffIcon"),
   saveApiKey: document.getElementById("saveApiKey"),
-  clearApiKey: document.getElementById("clearApiKey"),
   navButtons: Array.from(document.querySelectorAll(".nav-pill")),
   viewPanels: Array.from(document.querySelectorAll(".view-panel")),
   mobileMenu: document.getElementById("mobileMenu"),
@@ -56,6 +78,8 @@ const elements = {
   toggleBulletList: document.getElementById("toggleBulletList"),
   fontSizeControl: document.getElementById("fontSizeControl"),
   lineHeightControl: document.getElementById("lineHeightControl"),
+  formatToolbar: document.getElementById("formatToolbar"),
+  mobileFormatToggle: document.getElementById("mobileFormatToggle"),
   generateDaily: document.getElementById("generateDaily"),
   generateWeekly: document.getElementById("generateWeekly"),
   generateMonthly: document.getElementById("generateMonthly"),
@@ -83,6 +107,7 @@ const elements = {
   archiveConnections: document.getElementById("archiveConnections"),
   jumpToSpark: document.getElementById("jumpToSpark"),
   consoleFab: document.getElementById("consoleFab"),
+  togglePanelsFab: document.getElementById("togglePanelsFab"),
   controlPanel: document.getElementById("controlPanel"),
   panelClose: document.getElementById("panelClose"),
   rainAmount: document.getElementById("rainAmount"),
@@ -91,6 +116,8 @@ const elements = {
   trailSpeed: document.getElementById("trailSpeed"),
   blurDepth: document.getElementById("blurDepth"),
   backgroundBlur: document.getElementById("backgroundBlur"),
+  leftPanelOpacity: document.getElementById("leftPanelOpacity"),
+  rightPanelOpacity: document.getElementById("rightPanelOpacity"),
   resetScene: document.getElementById("resetScene"),
   clearMedia: document.getElementById("clearMedia"),
   apiReminder: document.getElementById("apiReminder"),
@@ -127,12 +154,22 @@ const state = {
   journalName: "念念之间",
   selectedImage: null,
   settings: {
-    rainAmount: 0.45,
-    mistAmount: 0.34,
-    refraction: 0.62,
-    trailSpeed: 0.85,
-    blurDepth: 0.46,
-    backgroundBlur: 0.28,
+    rainAmount: 0.58,
+    mistAmount: 0.18,
+    refraction: 0.84,
+    trailSpeed: 0.9,
+    blurDepth: 0.42,
+    backgroundBlur: 0.1,
+    leftPanelOpacity: 0.24,
+    rightPanelOpacity: 0.2,
+    leftPanelSize: 292,
+    rightPanelSize: 1200,
+    leftPanelHeight: window.innerHeight - 28,
+    rightPanelHeight: window.innerHeight - 28,
+    leftPanelX: 14,
+    leftPanelY: 14,
+    rightPanelX: 324,
+    rightPanelY: 14,
   },
   media: {
     type: "gradient",
@@ -145,6 +182,7 @@ const state = {
   texture: null,
   buffer: null,
   startTime: performance.now(),
+  panelsHidden: false,
 };
 
 function openDB() {
@@ -249,7 +287,12 @@ function formatChineseDate(dateKey) {
 }
 
 function currentTimeText() {
-  return new Date().toLocaleTimeString(undefined);
+  return new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date());
 }
 
 function stripHtml(html) {
@@ -276,6 +319,7 @@ function switchView(view) {
     panel.classList.toggle("is-active", panel.dataset.viewPanel === view);
   });
   elements.mobileTitle.textContent = { spark: "灵光", gather: "拾掇", echo: "回响" }[view];
+  syncResponsiveUI();
 }
 
 function bindNavigation() {
@@ -292,6 +336,22 @@ function bindNavigation() {
   elements.jumpToSpark.addEventListener("click", () => switchView("spark"));
 }
 
+function isMobileViewport() {
+  return window.matchMedia("(max-width: 760px)").matches;
+}
+
+function syncResponsiveUI() {
+  if (!elements.formatToolbar || !elements.mobileFormatToggle) return;
+  const mobile = isMobileViewport();
+  const showToolbar = mobile && state.currentView === "spark" && elements.mobileFormatToggle.getAttribute("aria-expanded") === "true";
+  elements.formatToolbar.classList.toggle("is-open", showToolbar);
+  elements.mobileFormatToggle.classList.toggle("is-active", showToolbar);
+  if (!mobile) {
+    elements.mobileFormatToggle.setAttribute("aria-expanded", "false");
+    elements.formatToolbar.classList.remove("is-open");
+  }
+}
+
 function bindSettings() {
   elements.providerSelect.value = state.aiSettings.provider;
   elements.apiKeyInput.value = state.aiSettings.apiKey;
@@ -301,19 +361,14 @@ function bindSettings() {
   elements.toggleApiVisibility.addEventListener("click", () => {
     const visible = elements.apiKeyInput.type === "text";
     elements.apiKeyInput.type = visible ? "password" : "text";
-    elements.toggleApiVisibility.textContent = visible ? "显示" : "隐藏";
+    elements.eyeOpenIcon.classList.toggle("hidden", !visible);
+    elements.eyeOffIcon.classList.toggle("hidden", visible);
   });
   elements.saveApiKey.addEventListener("click", () => {
     state.aiSettings.provider = elements.providerSelect.value;
     state.aiSettings.apiKey = elements.apiKeyInput.value.trim();
     saveJSON(SETTINGS_KEY, state.aiSettings);
     markSaved(state.aiSettings.apiKey ? "API Key 已保存在本地" : "未填写 API Key");
-  });
-  elements.clearApiKey.addEventListener("click", () => {
-    state.aiSettings.apiKey = "";
-    elements.apiKeyInput.value = "";
-    saveJSON(SETTINGS_KEY, state.aiSettings);
-    markSaved("API Key 已清除");
   });
   elements.closeApiReminder.addEventListener("click", () => {
     elements.apiReminder.classList.add("hidden");
@@ -338,22 +393,25 @@ function applyFormatSettings() {
 }
 
 function execEditorCommand(command) {
+  document.execCommand("styleWithCSS", false, true);
   document.execCommand(command, false);
   focusActiveEditor();
 }
 
-function applyStyleToSelection(styleText) {
+function applyStyleToSelection(styleText, tagName = "span") {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-    markSaved("先选中文字，再调整字号或行距");
     return;
   }
   const range = selection.getRangeAt(0);
-  const span = document.createElement("span");
+  const span = document.createElement(tagName);
   span.style.cssText = styleText;
   span.appendChild(range.extractContents());
   range.insertNode(span);
+  const nextRange = document.createRange();
+  nextRange.selectNodeContents(span);
   selection.removeAllRanges();
+  selection.addRange(nextRange);
 }
 
 function focusActiveEditor() {
@@ -361,7 +419,12 @@ function focusActiveEditor() {
 }
 
 function bindFormatting() {
-  elements.toggleBold.addEventListener("click", () => execEditorCommand("bold"));
+  elements.mobileFormatToggle?.addEventListener("click", () => {
+    const expanded = elements.mobileFormatToggle.getAttribute("aria-expanded") === "true";
+    elements.mobileFormatToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+    syncResponsiveUI();
+  });
+  elements.toggleBold.addEventListener("click", () => applyStyleToSelection("font-weight:700;"));
   elements.toggleUnderline.addEventListener("click", () => execEditorCommand("underline"));
   elements.toggleOrderedList.addEventListener("click", () => execEditorCommand("insertOrderedList"));
   elements.toggleBulletList.addEventListener("click", () => execEditorCommand("insertUnorderedList"));
@@ -372,7 +435,7 @@ function bindFormatting() {
   });
   elements.lineHeightControl.addEventListener("input", () => {
     const lh = LINE_HEIGHT_OPTIONS[Number(elements.lineHeightControl.value)] ?? 1.5;
-    applyStyleToSelection(`line-height:${lh}; display:inline-block;`);
+    applyStyleToSelection(`line-height:${lh}; display:inline-block; width:100%;`, "div");
   });
 }
 
@@ -387,17 +450,16 @@ function bindEditor() {
   elements.insertImage.addEventListener("click", () => elements.inlineImageInput.click());
   elements.inlineImageInput.addEventListener("change", insertInlineImage);
   elements.entryBody.addEventListener("click", (event) => {
-    if (event.target instanceof HTMLImageElement) {
-      if (state.selectedImage) state.selectedImage.style.outline = "";
-      state.selectedImage = event.target;
-      state.selectedImage.style.outline = "2px solid rgba(24, 197, 142, 0.9)";
+    const wrapper = event.target instanceof HTMLElement ? event.target.closest(".resizable-image") : null;
+    if (wrapper) {
+      if (state.selectedImage) state.selectedImage.classList.remove("is-selected");
+      state.selectedImage = wrapper;
+      state.selectedImage.classList.add("is-selected");
       return;
     }
-    if (state.selectedImage) state.selectedImage.style.outline = "";
+    if (state.selectedImage) state.selectedImage.classList.remove("is-selected");
     state.selectedImage = null;
   });
-  elements.imageShrink.addEventListener("click", () => resizeSelectedImage(-40));
-  elements.imageGrow.addEventListener("click", () => resizeSelectedImage(40));
 }
 
 function saveCurrentNote() {
@@ -617,21 +679,14 @@ function insertInlineImage(event) {
   const reader = new FileReader();
   reader.onload = () => {
     focusActiveEditor();
-    document.execCommand("insertHTML", false, `<img src="${reader.result}" alt="本地图片" style="width:320px;max-width:100%;" />`);
+    document.execCommand(
+      "insertHTML",
+      false,
+      `<span class="resizable-image" contenteditable="false" style="width:320px;"><img src="${reader.result}" alt="本地图片" /></span><br>`
+    );
   };
   reader.readAsDataURL(file);
   event.target.value = "";
-}
-
-function resizeSelectedImage(delta) {
-  if (!state.selectedImage) {
-    markSaved("先点选一张图片，再调整大小");
-    return;
-  }
-  const currentWidth = parseInt(state.selectedImage.style.width || `${state.selectedImage.clientWidth}`, 10) || 320;
-  const nextWidth = Math.max(80, currentWidth + delta);
-  state.selectedImage.style.width = `${nextWidth}px`;
-  state.selectedImage.style.maxWidth = "100%";
 }
 
 function renderCalendar() {
@@ -1015,9 +1070,27 @@ function setupVoiceInput() {
 
 function bindMedia() {
   elements.uploadTrigger.addEventListener("click", () => elements.mediaInput.click());
-  elements.resetBackground.addEventListener("click", clearMedia);
+  elements.resetBackground.addEventListener("click", resetToRainBackground);
   elements.mediaInput.addEventListener("change", onMediaSelected);
   elements.clearMedia.addEventListener("click", clearMedia);
+}
+
+function resetToRainBackground() {
+  clearMedia();
+  applyDefaultBackgroundVideo();
+  const shell = document.querySelector(".app-shell");
+  shell?.classList.remove("theme-daybreak", "theme-ocean");
+  Object.assign(state.settings, {
+    rainAmount: 0.58,
+    mistAmount: 0.18,
+    refraction: 0.84,
+    trailSpeed: 0.92,
+    blurDepth: 0.42,
+    backgroundBlur: 0.1,
+  });
+  Object.entries(state.settings).forEach(([key, value]) => {
+    if (elements[key]) elements[key].value = String(value);
+  });
 }
 
 async function hydrateState() {
@@ -1051,6 +1124,18 @@ function clearMedia() {
   elements.video.removeAttribute("src");
 }
 
+function applyDefaultBackgroundVideo() {
+  state.media.type = "video";
+  state.media.video = elements.video;
+  delete elements.video.dataset.url;
+  elements.video.src = DEFAULT_BACKGROUND_VIDEO;
+  elements.video.classList.remove("hidden");
+  elements.image.classList.add("hidden");
+  elements.image.removeAttribute("src");
+  elements.video.load();
+  elements.video.play().catch(() => {});
+}
+
 function onMediaSelected(event) {
   const file = event.target.files?.[0];
   if (!file) return;
@@ -1074,26 +1159,197 @@ function onMediaSelected(event) {
 }
 
 function bindAtmospherePanel() {
-  elements.consoleFab.addEventListener("click", () => elements.controlPanel.classList.remove("hidden"));
+  elements.consoleFab.addEventListener("click", () => {
+    if (state.panelsHidden) return;
+    elements.controlPanel.classList.remove("hidden");
+  });
+  elements.togglePanelsFab.addEventListener("click", togglePanelsVisibility);
   elements.panelClose.addEventListener("click", () => elements.controlPanel.classList.add("hidden"));
-  ["rainAmount", "mistAmount", "refraction", "trailSpeed", "blurDepth", "backgroundBlur"].forEach((key) => {
+  ["rainAmount", "mistAmount", "refraction", "trailSpeed", "blurDepth", "backgroundBlur", "leftPanelOpacity", "rightPanelOpacity"].forEach((key) => {
     elements[key].addEventListener("input", () => {
       state.settings[key] = Number(elements[key].value);
     });
   });
   elements.resetScene.addEventListener("click", () => {
     Object.assign(state.settings, {
-      rainAmount: 0.45,
-      mistAmount: 0.34,
-      refraction: 0.62,
-      trailSpeed: 0.85,
-      blurDepth: 0.46,
-      backgroundBlur: 0.28,
+      rainAmount: 0.58,
+      mistAmount: 0.18,
+      refraction: 0.84,
+      trailSpeed: 0.9,
+      blurDepth: 0.42,
+      backgroundBlur: 0.1,
+      leftPanelOpacity: 0.24,
+      rightPanelOpacity: 0.2,
     });
+    resetPanelsToDefaultLayout();
     Object.entries(state.settings).forEach(([key, value]) => {
       if (elements[key]) elements[key].value = String(value);
     });
+    applyPanelLayout();
   });
+}
+
+function togglePanelsVisibility() {
+  if (!state.panelsHidden) {
+    state.settings.leftPanelSize = 0;
+    state.settings.rightPanelSize = 0;
+    state.settings.leftPanelOpacity = 0;
+    state.settings.rightPanelOpacity = 0;
+    state.panelsHidden = true;
+    elements.controlPanel.classList.add("hidden");
+    elements.apiReminder.classList.add("hidden");
+    document.querySelector(".app-shell")?.classList.add("panels-hidden");
+  } else {
+    state.settings.leftPanelOpacity = 0.24;
+    state.settings.rightPanelOpacity = 0.2;
+    resetPanelsToDefaultLayout();
+    state.panelsHidden = false;
+    document.querySelector(".app-shell")?.classList.remove("panels-hidden");
+  }
+  applyPanelLayout();
+}
+
+function resetPanelsToDefaultLayout() {
+  const margin = 14;
+  const gap = 18;
+  const availableHeight = Math.max(220, window.innerHeight - margin * 2);
+  const availableWidth = Math.max(720, window.innerWidth - margin * 2);
+  const leftWidth = Math.min(292, Math.max(220, Math.round(availableWidth * 0.24)));
+  const rightX = margin + leftWidth + gap;
+  const rightWidth = Math.max(360, window.innerWidth - rightX - margin);
+
+  Object.assign(state.settings, {
+    leftPanelSize: leftWidth,
+    rightPanelSize: rightWidth,
+    leftPanelHeight: availableHeight,
+    rightPanelHeight: availableHeight,
+    leftPanelX: margin,
+    leftPanelY: margin,
+    rightPanelX: rightX,
+    rightPanelY: margin,
+  });
+}
+
+function applyPanelLayout() {
+  const leftSize = Math.max(0, Number(state.settings.leftPanelSize) || 0);
+  const rightSize = Math.max(0, Number(state.settings.rightPanelSize) || 0);
+  document.documentElement.style.setProperty("--left-rail-width", `${leftSize}px`);
+  document.documentElement.style.setProperty("--right-panel-width", `${rightSize}px`);
+  document.documentElement.style.setProperty("--left-panel-height", `${Math.max(120, Number(state.settings.leftPanelHeight) || 120)}px`);
+  document.documentElement.style.setProperty("--right-panel-height", `${Math.max(120, Number(state.settings.rightPanelHeight) || 120)}px`);
+  document.documentElement.style.setProperty("--left-panel-x", `${Math.max(0, Number(state.settings.leftPanelX) || 0)}px`);
+  document.documentElement.style.setProperty("--left-panel-y", `${Math.max(0, Number(state.settings.leftPanelY) || 0)}px`);
+  document.documentElement.style.setProperty("--right-panel-x", `${Math.max(0, Number(state.settings.rightPanelX) || 0)}px`);
+  document.documentElement.style.setProperty("--right-panel-y", `${Math.max(0, Number(state.settings.rightPanelY) || 0)}px`);
+  elements.leftPanel?.classList.toggle("is-collapsed", leftSize <= 2);
+  elements.rightPanel?.classList.toggle("is-collapsed", rightSize <= 2);
+}
+
+function bindPanelDragControls() {
+  if (window.innerWidth <= 1100) return;
+
+  const beginDrag = (onMove) => (event) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const snapshot = { ...state.settings };
+    const stop = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", stop);
+    };
+    const move = (moveEvent) => {
+      onMove(moveEvent.clientX - startX, moveEvent.clientY - startY, moveEvent, snapshot);
+      applyPanelLayout();
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", stop);
+  };
+
+  elements.leftPanelResizeHandle?.addEventListener("mousedown", beginDrag((dx, _dy, _event, snapshot) => {
+    state.settings.leftPanelSize = Math.max(0, Math.min(420, snapshot.leftPanelSize + dx));
+  }));
+  elements.leftPanelResizeLeft?.addEventListener("mousedown", beginDrag((dx, _dy, _event, snapshot) => {
+    state.settings.leftPanelSize = Math.max(0, Math.min(420, snapshot.leftPanelSize - dx));
+    state.settings.leftPanelX = Math.max(0, snapshot.leftPanelX + dx);
+  }));
+
+  elements.leftPanelResizeTop?.addEventListener("mousedown", beginDrag((_dx, dy, _event, snapshot) => {
+    state.settings.leftPanelHeight = Math.max(120, Math.min(window.innerHeight - 10, snapshot.leftPanelHeight - dy));
+    state.settings.leftPanelY = Math.max(0, Math.min(window.innerHeight - 120, snapshot.leftPanelY + dy));
+  }));
+
+  elements.leftPanelResizeBottom?.addEventListener("mousedown", beginDrag((_dx, dy, _event, snapshot) => {
+    state.settings.leftPanelHeight = Math.max(120, Math.min(window.innerHeight - snapshot.leftPanelY, snapshot.leftPanelHeight + dy));
+  }));
+
+  elements.rightPanelResizeHandle?.addEventListener("mousedown", beginDrag((dx, _dy, _event, snapshot) => {
+    state.settings.rightPanelSize = Math.max(0, Math.min(window.innerWidth - 20, snapshot.rightPanelSize - dx));
+    state.settings.rightPanelX = Math.min(window.innerWidth - state.settings.rightPanelSize - 14, snapshot.rightPanelX + dx);
+    state.settings.rightPanelX = Math.max(14, state.settings.rightPanelX);
+  }));
+  elements.rightPanelResizeRight?.addEventListener("mousedown", beginDrag((dx, _dy, _event, snapshot) => {
+    state.settings.rightPanelSize = Math.max(0, Math.min(window.innerWidth - snapshot.rightPanelX, snapshot.rightPanelSize + dx));
+  }));
+
+  elements.rightPanelResizeTop?.addEventListener("mousedown", beginDrag((_dx, dy, _event, snapshot) => {
+    state.settings.rightPanelHeight = Math.max(120, Math.min(window.innerHeight - 10, snapshot.rightPanelHeight - dy));
+    state.settings.rightPanelY = Math.max(0, Math.min(window.innerHeight - 120, snapshot.rightPanelY + dy));
+  }));
+
+  elements.rightPanelResizeBottom?.addEventListener("mousedown", beginDrag((_dx, dy, _event, snapshot) => {
+    state.settings.rightPanelHeight = Math.max(120, Math.min(window.innerHeight - snapshot.rightPanelY, snapshot.rightPanelHeight + dy));
+  }));
+
+  elements.leftPanelMoveHandle?.addEventListener("mousedown", beginDrag((dx, dy, _event, snapshot) => {
+    state.settings.leftPanelX = Math.max(0, Math.min(window.innerWidth - Math.max(snapshot.leftPanelSize, 24), snapshot.leftPanelX + dx));
+    state.settings.leftPanelY = Math.max(0, Math.min(window.innerHeight - 120, snapshot.leftPanelY + dy));
+  }));
+
+  elements.rightPanelMoveHandle?.addEventListener("mousedown", beginDrag((dx, dy, _event, snapshot) => {
+    state.settings.rightPanelX = Math.max(14, Math.min(window.innerWidth - Math.max(snapshot.rightPanelSize, 28), snapshot.rightPanelX + dx));
+    state.settings.rightPanelY = Math.max(0, Math.min(window.innerHeight - 120, snapshot.rightPanelY + dy));
+  }));
+
+  elements.leftPanelDock?.addEventListener("mousedown", beginDrag((dx, _dy, moveEvent) => {
+    state.settings.leftPanelSize = Math.max(0, Math.min(420, moveEvent.clientX));
+    state.settings.leftPanelX = 0;
+  }));
+
+  elements.rightPanelDock?.addEventListener("mousedown", beginDrag((_dx, _dy, moveEvent) => {
+    const rightGap = window.innerWidth - moveEvent.clientX;
+    state.settings.rightPanelSize = Math.max(0, Math.min(window.innerWidth - 20, rightGap));
+    state.settings.rightPanelX = Math.max(14, window.innerWidth - state.settings.rightPanelSize);
+  }));
+
+  const bindCornerScale = (el, panelKey, sx, sy) => {
+    el?.addEventListener("mousedown", beginDrag((dx, dy, _event, snapshot) => {
+      const sizeKey = panelKey === "left" ? "leftPanelSize" : "rightPanelSize";
+      const heightKey = panelKey === "left" ? "leftPanelHeight" : "rightPanelHeight";
+      const xKey = panelKey === "left" ? "leftPanelX" : "rightPanelX";
+      const yKey = panelKey === "left" ? "leftPanelY" : "rightPanelY";
+      const aspect = Math.max(0.2, snapshot[sizeKey] / Math.max(snapshot[heightKey], 1));
+      const scaledX = sx * dx / Math.max(snapshot[sizeKey], 1);
+      const scaledY = sy * dy / Math.max(snapshot[heightKey], 1);
+      const scale = 1 + Math.max(scaledX, scaledY);
+      const newWidth = Math.max(0, Math.min(window.innerWidth - 20, snapshot[sizeKey] * scale));
+      const newHeight = Math.max(120, Math.min(window.innerHeight - 20, newWidth / aspect));
+      state.settings[sizeKey] = newWidth;
+      state.settings[heightKey] = newHeight;
+      if (sx < 0) state.settings[xKey] = snapshot[xKey] + (snapshot[sizeKey] - newWidth);
+      if (sy < 0) state.settings[yKey] = snapshot[yKey] + (snapshot[heightKey] - newHeight);
+      state.settings[xKey] = Math.max(0, state.settings[xKey] ?? snapshot[xKey]);
+      state.settings[yKey] = Math.max(0, state.settings[yKey] ?? snapshot[yKey]);
+    }));
+  };
+
+  bindCornerScale(elements.leftPanelCornerTL, "left", -1, -1);
+  bindCornerScale(elements.leftPanelCornerTR, "left", 1, -1);
+  bindCornerScale(elements.leftPanelCornerBL, "left", -1, 1);
+  bindCornerScale(elements.leftPanelCornerBR, "left", 1, 1);
+  bindCornerScale(elements.rightPanelCornerTL, "right", -1, -1);
+  bindCornerScale(elements.rightPanelCornerTR, "right", 1, -1);
+  bindCornerScale(elements.rightPanelCornerBL, "right", -1, 1);
+  bindCornerScale(elements.rightPanelCornerBR, "right", 1, 1);
 }
 
 function renderArchiveAndConnections() {
@@ -1143,7 +1399,7 @@ function initGL() {
       float staticDrops(vec2 uv,float t){ uv*=40.0; vec2 id=floor(uv); vec2 gv=fract(uv)-0.5; vec3 n=n13(id.x*107.45+id.y*3543.654); vec2 p=(n.xy-0.5)*0.7; float d=length(gv-p); float fade=saw(0.025,fract(t+n.z)); return S(0.3,0.0,d)*fract(n.z*10.0)*fade;}
       vec2 drops(vec2 uv,float t,float l0,float l1,float l2){ float s=staticDrops(uv,t)*l0; vec2 m1=dropLayer(uv,t)*l1; vec2 m2=dropLayer(uv*1.85+vec2(3.7,1.2),t*1.17)*l2; float c=s+m1.x+m2.x; c=S(0.3,1.0,c); return vec2(c,max(m1.y*l1,m2.y*l2));}
       vec3 sampleBackground(vec2 uv,float lodBias){ vec2 centered=uv-0.5; float radial=dot(centered,centered); vec2 warped=uv+centered*radial*0.1; vec2 offset=1.0/u_resolution*lodBias*2.0; vec3 c0=texture2D(u_texture,clamp(warped,0.001,0.999)).rgb; vec3 c1=texture2D(u_texture,clamp(warped+vec2(offset.x,0.0),0.001,0.999)).rgb; vec3 c2=texture2D(u_texture,clamp(warped-vec2(offset.x,0.0),0.001,0.999)).rgb; vec3 c3=texture2D(u_texture,clamp(warped+vec2(0.0,offset.y),0.001,0.999)).rgb; vec3 c4=texture2D(u_texture,clamp(warped-vec2(0.0,offset.y),0.001,0.999)).rgb; return (c0+c1+c2+c3+c4)/5.0; }
-      void main(){ vec2 fragCoord=v_uv*u_resolution; vec2 uv=(fragCoord-0.5*u_resolution)/u_resolution.y; vec2 screenUV=fragCoord/u_resolution; float t=u_time*0.2*u_trailSpeed; float rain=clamp(u_rainAmount,0.0,1.0); float staticLayer=S(-0.5,1.0,rain)*2.0; float layer1=S(0.25,0.75,rain); float layer2=S(0.0,0.55,rain); vec2 baseUV=uv*(0.9+sin(u_time*0.1)*0.05); vec2 c=drops(baseUV,t,staticLayer,layer1,layer2); vec2 eps=vec2(2.0/u_resolution.y,0.0); float cx=drops(baseUV+eps.xy,t,staticLayer,layer1,layer2).x; float cy=drops(baseUV+eps.yx,t,staticLayer,layer1,layer2).x; vec2 n=vec2(cx-c.x,cy-c.x); float focus=mix(2.0+6.0*u_blurDepth-c.y*2.0,0.8,S(0.1,0.25,c.x)); vec2 refractedUV=screenUV+n*(0.03+u_refraction*0.08); vec3 bg=sampleBackground(refractedUV,focus); float mist=u_mistAmount*(0.38+rain*0.45); float mistShape=0.5+0.5*sin((screenUV.y*2.0+screenUV.x*0.8)*3.1415+u_time*0.08); vec3 fogTint=vec3(0.88,0.92,0.96); bg=mix(bg,bg*0.72+fogTint*0.28,mist*(0.7+mistShape*0.3)); float dropHighlight=pow(c.x,1.6); vec3 highlight=vec3(0.85,0.9,1.0)*dropHighlight*0.22; vec3 col=bg*(1.0-vec3(c.y)*mist*0.24)+highlight; gl_FragColor=vec4(col,1.0); }
+      void main(){ vec2 fragCoord=v_uv*u_resolution; vec2 uv=(fragCoord-0.5*u_resolution)/u_resolution.y; vec2 screenUV=fragCoord/u_resolution; float t=u_time*0.2*u_trailSpeed; float rain=clamp(u_rainAmount,0.0,1.0); float staticLayer=S(-0.5,1.0,rain)*2.2; float layer1=S(0.18,0.78,rain); float layer2=S(0.0,0.58,rain); vec2 baseUV=uv*(0.92+sin(u_time*0.1)*0.05); vec2 c=drops(baseUV,t,staticLayer,layer1,layer2); vec2 eps=vec2(2.0/u_resolution.y,0.0); float cx=drops(baseUV+eps.xy,t,staticLayer,layer1,layer2).x; float cy=drops(baseUV+eps.yx,t,staticLayer,layer1,layer2).x; vec2 n=vec2(cx-c.x,cy-c.x); float focus=mix(1.4+5.4*u_blurDepth-c.y*1.9,0.55,S(0.08,0.24,c.x)); vec2 refractedUV=screenUV+n*(0.038+u_refraction*0.092); vec3 bg=sampleBackground(refractedUV,focus); float mist=u_mistAmount*(0.24+rain*0.26); float mistShape=0.5+0.5*sin((screenUV.y*2.0+screenUV.x*0.8)*3.1415+u_time*0.08); vec3 fogTint=vec3(0.93,0.96,1.0); bg=mix(bg,bg*0.86+fogTint*0.14,mist*(0.46+mistShape*0.18)); float dropHighlight=pow(c.x,1.3); float rim=pow(clamp(length(n)*28.0,0.0,1.0),1.2)*c.x; vec3 highlight=vec3(0.92,0.97,1.0)*(dropHighlight*0.28+rim*0.16); vec3 glassShadow=vec3(0.0,0.02,0.04)*c.y*0.24; vec3 col=bg*(1.0-vec3(c.y)*0.08)+highlight-glassShadow; gl_FragColor=vec4(col,1.0); }
       `
     );
   } catch {
@@ -1209,9 +1465,11 @@ function uploadTextureFrame() {
   else if (state.media.type === "image" && elements.image.complete && elements.image.naturalWidth > 0) source = elements.image;
   gl.bindTexture(gl.TEXTURE_2D, state.texture);
   if (source) {
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
     return;
   }
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
   gl.texImage2D(
     gl.TEXTURE_2D,
     0,
@@ -1244,11 +1502,14 @@ function renderGL(now) {
   gl.uniform1i(state.uniforms.texture, 0);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
   document.documentElement.style.setProperty("--bg-blur", `${state.settings.backgroundBlur * 24}px`);
+  document.documentElement.style.setProperty("--left-panel-alpha", String(state.settings.leftPanelOpacity));
+  document.documentElement.style.setProperty("--right-panel-alpha", String(state.settings.rightPanelOpacity));
   requestAnimationFrame(renderGL);
 }
 
 async function init() {
   await hydrateState();
+  resetPanelsToDefaultLayout();
   bindNavigation();
   bindSettings();
   bindFormatting();
@@ -1260,10 +1521,21 @@ async function init() {
   bindMedia();
   bindAtmospherePanel();
   applyFormatSettings();
+  applyPanelLayout();
+  bindPanelDragControls();
+  applyDefaultBackgroundVideo();
   initGL();
   syncAllViews();
   switchView("spark");
-  window.addEventListener("resize", resizeCanvas);
+  syncResponsiveUI();
+  window.addEventListener("resize", () => {
+    resizeCanvas();
+    if (!state.panelsHidden && window.innerWidth > 1100) {
+      resetPanelsToDefaultLayout();
+      applyPanelLayout();
+    }
+    syncResponsiveUI();
+  });
 }
 
 void init();
